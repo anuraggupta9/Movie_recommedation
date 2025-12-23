@@ -5,39 +5,51 @@ import requests
 import os
 import gdown
 
-# ================= DOWNLOAD FILES FROM GOOGLE DRIVE =================
+# ================= GOOGLE DRIVE DOWNLOAD =================
 
 MOVIES_ID = "1ylBnpIdM-OMx1_f4hN6xFfCSc4VyLbpY"
 SIMILARITY_ID = "1ma4lY4NEyK9JiLVE3wOSTNGluIGO1SR9"
 
+@st.cache_resource
 def download_from_drive(file_id, output):
     if not os.path.exists(output):
         with st.spinner(f"Downloading {output}..."):
             url = f"https://drive.google.com/uc?id={file_id}"
             gdown.download(url, output, quiet=False)
+    return output
 
 download_from_drive(MOVIES_ID, "movies.pkl")
 download_from_drive(SIMILARITY_ID, "similarity.pkl")
 
 # ================= LOAD DATA =================
 
-movies_df = pickle.load(open("movies.pkl", "rb"))
-similarity = pickle.load(open("similarity.pkl", "rb"))
+@st.cache_resource
+def load_data():
+    movies = pickle.load(open("movies.pkl", "rb"))
+    similarity = pickle.load(open("similarity.pkl", "rb"))
+    return movies, similarity
 
-# ================= TMDB POSTER FUNCTION =================
+movies_df, similarity = load_data()
+
+# ================= TMDB POSTER FUNCTION (SAFE) =================
 
 TMDB_API_KEY = "aa1a07fe07105050ecbe47349703953a"
 
+@st.cache_data(show_spinner=False)
 def fetch_poster(movie_id):
-    response = requests.get(
-        f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={TMDB_API_KEY}"
-    )
-    data = response.json()
-    return (
-        "https://image.tmdb.org/t/p/w500" + data["poster_path"]
-        if data.get("poster_path")
-        else "https://via.placeholder.com/500x750?text=No+Image"
-    )
+    url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={TMDB_API_KEY}"
+    try:
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()
+        data = response.json()
+
+        if data.get("poster_path"):
+            return "https://image.tmdb.org/t/p/w500" + data["poster_path"]
+
+    except requests.exceptions.RequestException:
+        pass
+
+    return "https://via.placeholder.com/500x750?text=Poster+Unavailable"
 
 # ================= RECOMMENDER =================
 
@@ -51,15 +63,15 @@ def recommend(movie):
         key=lambda x: x[1]
     )[1:6]
 
-    recommended_movies = []
-    recommended_movies_posters = []
+    names = []
+    posters = []
 
     for i in movies_list:
         movie_id = movies_df.iloc[i[0]].movie_id
-        recommended_movies.append(movies_df.iloc[i[0]].title)
-        recommended_movies_posters.append(fetch_poster(movie_id))
+        names.append(movies_df.iloc[i[0]].title)
+        posters.append(fetch_poster(movie_id))
 
-    return recommended_movies, recommended_movies_posters
+    return names, posters
 
 # ================= UI =================
 
