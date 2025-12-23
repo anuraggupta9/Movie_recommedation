@@ -41,19 +41,19 @@ Movie_recommendation/
 
 ## Installation (Run Locally):
 1. Clone the repository
-   git clone https://github.com/anuraggupta9/Movie_recommendation.git
-   cd Movie_recommendation
+   - git clone https://github.com/anuraggupta9/Movie_recommendation.git
+   - cd Movie_recommendation
 
 2. Create virtual environment
-   python -m venv .venv
-   source .venv/bin/activate   (Linux/Mac)
-   .venv\Scripts\activate      (Windows)
+   - python -m venv .venv
+   - source .venv/bin/activate   (Linux/Mac)
+   - .venv\Scripts\activate      (Windows)
 
 3. Install dependencies
-   pip install -r requirements.txt
+   - pip install -r requirements.txt
 
 4. Run the app
-   streamlit run app.py
+   - streamlit run app.py
 
 ## Handling Large Files:
 - movies.pkl and similarity.pkl are not stored on GitHub
